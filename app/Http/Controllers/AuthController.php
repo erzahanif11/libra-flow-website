@@ -3,99 +3,68 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
     public function showLogin()
     {
-        return view('login');
+        return view('auth.login');
     }
 
-    public function login()
+    public function login(Request $request)
     {
-        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-            header("Location: /login");
-            exit();
+        $credentials = $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        $user = User::where('username', $credentials['username'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            return back()->withErrors(['username' => 'Invalid username or password.'])->withInput();
         }
 
-        $username = trim($_POST['username'] ?? '');
-        $password = trim($_POST['password'] ?? '');
+        Auth::login($user);
 
-        $userModel = new User();
-        $user = $userModel->findByUsername($username);
-
-        if ($user && password_verify($password, $user['password'])) {
-            session_start();
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['email'] = $user['email'];
-            header("Location: /profile");
-            exit();
-        } else {
-            echo "Invalid username or password.";
-        }
+        return redirect()->route('profile');
     }
 
     public function showRegister()
     {
-        return view('register');
+        return view('auth.register');
     }
 
-    public function register()
+    public function register(Request $request)
     {
-        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-            header("Location: /register");
-            exit();
-        }
-
-        $username = trim($_POST['username'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $password = trim($_POST['password'] ?? '');
-        $confirmPassword = trim($_POST['confirm_password'] ?? '');
-
-        if (empty($username) || empty($email) || empty($password) || empty($confirmPassword)) {
-            echo "All fields are required!";
-            return;
-        }
-
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            echo "Invalid email format!";
-            return;
-        }
-
-        if ($password !== $confirmPassword) {
-            echo "Passwords do not match!";
-            return;
-        }
-
-        if (strlen($password) < 8) {
-            echo "Password must be at least 8 characters!";
-            return;
-        }
-
-        $userModel = new User();
-        if ($userModel->exists($username, $email)) {
-            echo "Username or email already exists!";
-            return;
-        }
-
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $userModel->create([
-            'username' => $username,
-            'email' => $email,
-            'password' => $hashedPassword,
+        $request->validate([
+            'username' => 'required|string|max:50|unique:users,username',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
         ]);
 
-        echo "Registration successful! Redirecting to login.";
-        header("Refresh: 2; url=/login");
+        $user = User::create([
+            'username' => $request->username,
+            'name' => $request->username,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'user',
+        ]);
+
+        Auth::login($user);
+
+        return redirect()->route('profile');
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
-        session_start();
-        session_destroy();
-        echo "Logged out successfully! <a href='/login'>Login</a>";
+        Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login');
     }
 }
-
-?>

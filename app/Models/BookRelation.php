@@ -1,42 +1,26 @@
 <?php
 
 namespace App\Models;
-require_once __DIR__ . '/../../database/connection.php';
 
-class BookRelation
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class BookRelation extends Model
 {
-    protected $pdo;
+    use HasFactory;
 
-    public function __construct()
+    protected $fillable = [
+        'book_id',
+        'next_book_id',
+    ];
+
+    public function book()
     {
-        global $pdo;
-        $this->pdo = $pdo;
+        return $this->belongsTo(Book::class, 'book_id');
     }
 
-    public function all()
+    public function nextBook()
     {
-        $stmt = $this->pdo->query("SELECT * FROM book_relations");
-        return $stmt->fetchAll();
-    }
-
-    public function findByBook($bookId)
-    {
-        $stmt = $this->pdo->prepare("SELECT * FROM book_relations WHERE book_id = ?");
-        $stmt->execute([$bookId]);
-        return $stmt->fetchAll();
-    }
-
-    public function create($data)
-    {
-        $stmt = $this->pdo->prepare("INSERT INTO book_relations (book_id, next_book_id) VALUES (?, ?)");
-        return $stmt->execute([$data['book_id'], $data['next_book_id']]);
-    }
-
-    public function delete($id)
-    {
-        $stmt = $this->pdo->prepare("DELETE FROM book_relations WHERE id = ?");
-        return $stmt->execute([$id]);
+        return $this->belongsTo(Book::class, 'next_book_id');
     }
 }
-
-?>

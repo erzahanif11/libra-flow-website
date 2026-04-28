@@ -3,86 +3,74 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function showProfile()
     {
-        session_start();
-        if (!isset($_SESSION['user_id'])) {
-            header("Location: /login");
-            exit();
-        }
-
-        return view('profile');
+        return view('profile', ['user' => Auth::user()]);
     }
 
-    public function updateProfile()
+    public function updateProfile(Request $request)
     {
-        session_start();
-        if (!isset($_SESSION['user_id'])) {
-            header("Location: /login");
-            exit();
+        $user = Auth::user();
+        $action = $request->input('action');
+
+        if ($action === 'update_username') {
+            $request->validate([
+                'username' => 'required|string|max:50|unique:users,username,' . $user->id,
+            ]);
+
+            $user->update(['username' => $request->username]);
+
+            return back()->with('success', 'Username updated successfully.');
         }
 
-        $userModel = new User();
-        $id = $_SESSION['user_id'];
+        if ($action === 'update_email') {
+            $request->validate([
+                'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            ]);
 
-        if (isset($_POST['update_username'])) {
-            $username = $_POST['username'];
-            $userModel->update($id, ['username' => $username]);
-            $_SESSION['username'] = $username;
-            echo "Username updated successfully!";
+            $user->update(['email' => $request->email]);
+
+            return back()->with('success', 'Email updated successfully.');
         }
 
-        if (isset($_POST['update_email'])) {
-            $email = $_POST['email'];
-            $userModel->update($id, ['email' => $email]);
-            $_SESSION['email'] = $email;
-            echo "Email updated successfully!";
-        }
+        if ($action === 'update_password') {
+            $request->validate([
+                'password_old' => 'required|string',
+                'password_new' => 'required|string|min:8|confirmed',
+            ]);
 
-        if (isset($_POST['update_password'])) {
-            $oldPassword = $_POST['password_old'];
-            $newPassword = $_POST['password_new'];
-
-            $user = $userModel->findById($id);
-            if (password_verify($oldPassword, $user['password'])) {
-                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-                $userModel->update($id, ['password' => $hashedPassword]);
-                echo "Password updated successfully!";
-            } else {
-                echo "Old password is incorrect!";
+            if (! Auth::validate(['username' => $user->username, 'password' => $request->password_old])) {
+                return back()->withErrors(['password_old' => 'Old password is incorrect.']);
             }
+
+            $user->update(['password' => bcrypt($request->password_new)]);
+
+            return back()->with('success', 'Password updated successfully.');
         }
 
-        if (isset($_POST['delete'])) {
-            header("Location: /delete");
-        }
-
-        if (isset($_POST['logout'])) {
-            header("Location: /logout");
-        }
+        return back();
     }
 
-    public function deleteAccount()
+    public function deleteAccount(Request $request)
     {
-        session_start();
-        if (!isset($_SESSION['user_id'])) {
-            header("Location: /login");
-            exit();
-        }
+        $user = Auth::user();
 
-        $userModel = new User();
-        $id = $_SESSION['user_id'];
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-        if ($userModel->delete($id)) {
-            session_destroy();
-            echo "Account deleted successfully! <a href='/register'>Register</a>";
-        } else {
-            echo "Failed to delete account.";
-        }
+        $user->delete();
+
+        return redirect()->route('register')->with('success', 'Account deleted successfully.');
     }
 }
-
-?>
