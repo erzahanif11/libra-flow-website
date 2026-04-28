@@ -1,15 +1,13 @@
 <?php
-$host = "localhost";
-$username = "root";
-$password = "";
-$database = "libra_flow";
 
-try{
-    $pdo = new PDO("mysql:host=$host", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$database`");
-    echo "Database libra_flow created successfully.<br>";
-    
+require_once __DIR__ . '/../connection.php';
+
+try {
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS `libra-flow-website`");
+    echo "Database libra-flow-website created successfully.<br>";
+
+    $pdo->exec("USE `libra-flow-website`");
+
     // Tabel Users
     $sql = "CREATE TABLE IF NOT EXISTS users (
         id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -20,7 +18,6 @@ try{
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )";
-    $pdo->exec("USE `$database`");
     $pdo->exec($sql);
     echo "Table users created successfully.<br>";
 
@@ -39,11 +36,11 @@ try{
 
     // Tabel Book_Relations (Flow Linear)
     $sql = "CREATE TABLE IF NOT EXISTS book_relations (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    book_id INT UNSIGNED NOT NULL,
-    next_book_id INT UNSIGNED NOT NULL,
-    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
-    FOREIGN KEY (next_book_id) REFERENCES books(id) ON DELETE CASCADE
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        book_id INT UNSIGNED NOT NULL,
+        next_book_id INT UNSIGNED NOT NULL,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+        FOREIGN KEY (next_book_id) REFERENCES books(id) ON DELETE CASCADE
     )";
     $pdo->exec($sql);
     echo "Table book_relations created successfully.<br>";
@@ -97,6 +94,9 @@ try{
         $stmt->execute(['admin', 'admin@gmail.com', $defaultAdminPassword, 'admin']);
          echo "<br>Default admin user created successfully.<br>username: admin, password: admin123";
     }
-} catch(PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
+
+} catch (PDOException $e) {
+    die("Error: " . $e->getMessage());
 }
+
+?>
