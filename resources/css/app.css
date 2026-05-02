@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: "Libre Caslon";
+    /* Path ini langsung nembak ke public/fonts/ sesuai strukturmu */
+    src: url("/fonts/LibreCaslonCondensedwght.woff2") format("woff2-variations");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@layer base {
+    /* Mencegah layout bergeser saat scrollbar muncul/hilang */
+    html {
+        overflow-y: scroll;
+    }
+
+    /* Kustomisasi Scrollbar Desktop */
+    @media (min-width: 768px) {
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f8f8f8;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d1d1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #433a35; /* Warna tertiary lo */
+        }
+    }
+
+    /* Sembunyikan scrollbar di HP tapi tetap bisa di-scroll */
+    @media (max-width: 767px) {
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        body {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+    }
+}
+
+/* Utilitas tambahan untuk Tabs supaya tidak muncul scrollbar horizontal nanggung */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Paksa semua teks di aplikasi pakai Libre Caslon secara default */
+body {
+    @apply font-primary antialiased;
+}
